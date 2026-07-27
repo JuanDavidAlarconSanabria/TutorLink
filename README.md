@@ -1,5 +1,12 @@
 # TutorLink (Video [Drive](https://drive.google.com/drive/folders/10YdFIl-4PLr8f3aXT0r5H_wPVPovR7AD?usp=sharing).)
 
+Autores:
+
+- Diego Fernando Mellizo Pedraza
+- Axel Gomez Moreno
+- David Santiago Ramirez Sanchez
+
+
 Plataforma que conecta estudiantes con tutores independientes: autenticación,
 perfiles de estudiante/tutor, catálogo de materias, disponibilidad, reservas
 (bookings) y reseñas.
