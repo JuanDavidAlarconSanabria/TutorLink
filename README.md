@@ -1,86 +1,130 @@
-# TutorLink
+# TutorLink (Video [Drive](https://drive.google.com/drive/folders/10YdFIl-4PLr8f3aXT0r5H_wPVPovR7AD?usp=sharing).)
 
-Backend de TutorLink: FastAPI + SQLAlchemy (PostgreSQL), con autenticación
-JWT, perfiles de estudiante/tutor, catálogo de materias, disponibilidad,
-reservas (bookings) y reseñas.
+Plataforma que conecta estudiantes con tutores independientes: autenticación,
+perfiles de estudiante/tutor, catálogo de materias, disponibilidad, reservas
+(bookings) y reseñas.
 
-## Requisitos
+- **Backend** (este repo): FastAPI + SQLAlchemy + PostgreSQL
+- **Mobile**: Expo + React Native — repo separado, ver sección 2
 
-- Python 3.12+
-- PostgreSQL 16 (o Docker, ver más abajo)
+---
 
-## Instalación local
+## 1. Backend (FastAPI + PostgreSQL)
+
+### Estructura
+
+```
+backend/
+├── database.py     # Conexión a PostgreSQL
+├── models.py        # Modelos SQLAlchemy
+├── schemas.py       # Esquemas Pydantic (validación de requests/responses)
+├── security.py      # JWT + hashing de contraseñas (Argon2) + control de roles
+├── main.py           # Endpoints de la API
+└── tests/             # Suite de pruebas (unit / integration / acceptance)
+```
+
+### Endpoints principales
+
+| Módulo | Endpoint | Descripción |
+|---|---|---|
+| Auth | `POST /auth/register`, `POST /auth/login` | Registro y login (JWT) |
+| Subjects | `GET/POST /subjects` | Catálogo de materias |
+| Perfiles | `GET/PUT /students/me/profile`, `GET/PUT /tutors/me/profile` | Perfil de estudiante / tutor |
+| Disponibilidad | `POST /tutors/me/availability`, `GET /tutors/{id}/availability` | Horarios de un tutor |
+| Discovery | `GET /tutors/search` | Buscar tutores por materia, rating, día |
+| Bookings | `POST /bookings`, `GET /bookings/me`, `PATCH /bookings/{id}/{accept\|decline\|cancel\|reschedule\|complete}` | Ciclo completo de una reserva |
+| Reviews | `POST /reviews`, `GET /tutors/{id}/reviews` | Reseñas de un tutor |
+
+Documentación interactiva en `/docs` (Swagger) y `/redoc` una vez el servidor esté corriendo.
+
+### Cómo ejecutar
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-pip install -r requirements-dev.txt   # sólo si vas a correr los tests
-
-uvicorn main:app --reload
+cp .env.example .env   # ajusta DATABASE_URL y JWT_SECRET_KEY
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-La API queda disponible en `http://localhost:8000`, con documentación
-interactiva Swagger UI en `http://localhost:8000/docs` (y ReDoc en `/redoc`),
-generada automáticamente por FastAPI a partir de los schemas y tags de cada
-endpoint en `main.py`.
+- API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
 
-## Testing y cobertura (Workshop 4)
+Requisitos: Python 3.11+, PostgreSQL 14+. Las tablas se crean automáticamente
+al arrancar (`Base.metadata.create_all`); no hay migraciones manuales en desarrollo.
 
-La suite vive en `tests/` y está organizada en tres capas:
-
-```
-tests/
-  conftest.py             # BD de pruebas (SQLite aislado) + fixtures compartidas
-  unit/                   # funciones puras: hashing, JWT, validación Pydantic
-  integration/            # capa ORM real: constraints, relaciones, cascadas
-  acceptance/             # historias de usuario de punta a punta vía HTTP
-```
-
-Correr toda la suite con reporte de cobertura:
+**Con Docker:**
 
 ```bash
-pytest
-```
-
-Esto genera automáticamente (configurado en `pytest.ini` / `.coveragerc`):
-- Reporte en consola con líneas faltantes (`--cov-report=term-missing`)
-- Reporte HTML navegable en `coverage_html/index.html`
-- Reporte XML (`coverage.xml`) para integrarlo con CI/CD
-
-Cobertura actual: **models.py y schemas.py 100%**, **security.py ~91%**,
-**main.py ~92%**, **94.8% total** (55+ casos de prueba).
-
-Para correr sólo una capa:
-
-```bash
-pytest tests/unit
-pytest tests/integration
-pytest tests/acceptance
-```
-
-> **Nota de portabilidad ORM:** los tests usan SQLite como base de datos de
-> pruebas por simplicidad y velocidad. `models.py` define las llaves
-> primarias como `BigInteger` (pensado para `BIGSERIAL` de Postgres); en
-> SQLite eso rompe el autoincremento del rowid, así que `tests/conftest.py`
-> registra un compilador (`@compiles`) que sólo afecta al dialecto SQLite de
-> pruebas, sin tocar el esquema real de Postgres en producción.
-
-## Despliegue con Docker
-
-```bash
-cp .env.example .env      # ajustar variables si es necesario
+cp .env.example .env
 docker compose up --build
 ```
 
-Esto levanta dos servicios:
-- **db**: PostgreSQL 16, con volumen persistente y healthcheck.
-- **backend**: la API de TutorLink (espera a que `db` esté saludable antes
-  de arrancar), expuesta en `http://localhost:8000`.
-
-Para correr la suite de tests dentro de un contenedor (perfil separado, no
-se levanta con `docker compose up`):
+### Testing
 
 ```bash
-docker compose run --rm tests
+pytest                  # toda la suite, con reporte de cobertura
+pytest tests/unit        # sólo unit / integration / acceptance
 ```
+
+Cobertura actual: **94.8% total** (75 casos de prueba) — `models.py` y
+`schemas.py` al 100%, `main.py` ~92%, `security.py` ~91%. El reporte HTML se
+genera en `coverage_html/index.html` en cada corrida.
+
+### Pendiente (Release 2/3)
+
+Mensajería in-app (WebSocket), notificaciones por email, panel de
+administración, integración de videollamada.
+
+---
+
+## 2. Mobile (Expo + React Native)
+
+Repositorio separado: **https://github.com/diegomel07/tutorlink-mobile**
+
+Estado: MVP de **Estudiante** completo (auth, buscar tutores, reservar, mis reservas).
+
+### Estructura
+
+```
+app/                       # Rutas (expo-router, file-based)
+  _layout.jsx              # Providers + carga de fuentes + Stack
+  index.jsx                # Redirección según sesión
+  login.jsx / register.jsx
+  student.jsx               # Protegido, rol STUDENT
+  tutor.jsx / admin.jsx     # Protegidos, muestran ComingSoon
+src/
+  api/client.js             # Cliente fetch hacia el backend
+  context/AuthContext.jsx   # Auth con AsyncStorage
+  components/               # Layout, TutorCard, BookingModal, ProtectedRoute
+  pages/                     # LoginPage, RegisterPage, StudentDashboard, etc.
+  theme/tokens.js           # Colores, radios, fuentes
+```
+
+### Cómo ejecutar
+
+```bash
+cd tutorlink-mobile
+npm install
+cp .env.example .env   # ajusta EXPO_PUBLIC_API_URL, ver tabla abajo
+npx expo start
+```
+
+Escanea el QR con **Expo Go**, o presiona `i` / `a` en la terminal para abrir un simulador/emulador.
+
+`localhost` no apunta a tu computador desde un emulador/dispositivo, así que `EXPO_PUBLIC_API_URL` cambia según dónde corras la app:
+
+| Entorno | URL |
+|---|---|
+| Web (`npx expo start --web`) | `http://localhost:8000` |
+| Emulador Android | `http://10.0.2.2:8000` |
+| Simulador iOS | `http://localhost:8000` |
+| Dispositivo físico (Expo Go) | `http://<IP-LOCAL>:8000`, misma red Wi-Fi que el celular |
+
+---
+
+## 3. Notas de diseño
+
+- **Autenticación**: JWT (HS256) + Argon2 para contraseñas.
+- **Doble-booking**: validación de solapamiento en `_check_overlap()` (`main.py`).
+- **Producción**: reemplazar `Base.metadata.create_all()` por migraciones con Alembic, y usar un `JWT_SECRET_KEY` gestionado como secreto.
