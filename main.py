@@ -33,7 +33,11 @@ app = FastAPI(title="TutorLink API", version="1.0.0")
 # CORS para que React (localhost:3000/5173) pueda consumir la API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://tutorlink-mobile.onrender.com", 
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
