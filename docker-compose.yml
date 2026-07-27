@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tutorlink-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-TutorLink}
+    ports:
+      - "5432:5432"
+    volumes:
+      - tutorlink_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-TutorLink}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutorlink-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-TutorLink}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-CHANGE_ME_IN_PRODUCTION}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Servicio opcional: corre la suite completa de tests (unit + integration +
+  # acceptance) dentro de un contenedor equivalente al de `backend`, sin
+  # exponer puertos. Se invoca explícitamente con:
+  #   docker compose run --rm tests
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutorlink-tests
+    environment:
+      DATABASE_URL: sqlite+pysqlite:////tmp/test_tutorlink.db
+      JWT_SECRET_KEY: test-secret-key-not-for-production
+    profiles: ["test"]
+    command: ["pytest", "-v"]
+
+volumes:
+  tutorlink_db_data:

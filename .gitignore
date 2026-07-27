@@ -9,6 +9,10 @@ env/
 .env
 .env.*
 !.env.example
+coverage_html/
+coverage.xml
+.coverage
+.pytest_cache/
 
 # ---------- Editor / OS ----------
 .vscode/
