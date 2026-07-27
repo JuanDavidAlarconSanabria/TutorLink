@@ -1,0 +1,100 @@
+name: TutorLink Pipeline (FastAPI + Docker)
+
+on:
+  push:
+    branches: [ main, "Tests/Docker", test, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ==========================================
+  # TRABAJO 1: INTEGRACIÓN CONTINUA (CI / TESTS)
+  # ==========================================
+  ci-tests:
+    name: Ejecutar Pruebas (Unit, Integration, Acceptance)
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET_KEY: test-secret-key-not-for-production
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"   
+          cache: "pip"
+
+      - name: Instalar dependencias de producción y desarrollo
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Pruebas unitarias (Schemas & Security)
+        run: pytest tests/unit/ -v --no-cov
+
+      - name: Pruebas de integración (SQLAlchemy ORM)
+        run: pytest tests/integration/ -v --no-cov
+
+      - name: Pruebas de aceptación (User Stories)
+        run: pytest tests/acceptance/ -v --no-cov
+
+      - name: Suite completa con cobertura combinada
+        run: pytest   
+
+      - name: Subir reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            coverage_html/
+
+  # ==========================================
+  # DESPLIEGUE CONTINUO (CD / DOCKER)
+  # ==========================================
+  cd-docker-build:
+    name: Compilar y publicar imagen Docker
+    needs: ci-tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Iniciar sesión en GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer metadatos y etiquetas
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/tutorlink-api
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Compilar y publicar imagen Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
