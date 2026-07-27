@@ -21,3 +21,8 @@ passlib[argon2]==1.7.4
 argon2-cffi==23.1.0
 python-multipart==0.0.9
 email-validator==2.1.1
+
+pytest==9.1.1
+pytest-cov==7.1.0
+httpx==0.28.1
+Faker==40.35.0
