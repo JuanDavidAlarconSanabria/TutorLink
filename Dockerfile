@@ -17,14 +17,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Se instalan primero las dependencias de Python para aprovechar la caché
-# de capas de Docker cuando sólo cambia el código fuente.
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Instalar uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Dependencias adicionales para poder correr la suite de tests dentro del contenedor
-COPY requirements-dev.txt .
-RUN pip install --no-cache-dir -r requirements-dev.txt
+# Copiar únicamente los archivos de dependencias para aprovechar la caché
+COPY pyproject.toml uv.lock* ./
+
+# Instalar dependencias (incluyendo dev)
+RUN uv sync --frozen --all-groups
 
 COPY . .
 
@@ -37,4 +37,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

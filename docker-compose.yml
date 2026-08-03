@@ -45,7 +45,7 @@ services:
       DATABASE_URL: sqlite+pysqlite:////tmp/test_tutorlink.db
       JWT_SECRET_KEY: test-secret-key-not-for-production
     profiles: ["test"]
-    command: ["pytest", "-v"]
+    command: ["uv", "run","pytest", "-v"]
 
 volumes:
   tutorlink_db_data:
