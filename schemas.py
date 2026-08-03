@@ -29,6 +29,19 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
+class UserAdminCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    full_name: str
+
+
+class UserAdminUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8)
+    is_active: Optional[bool] = None
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -130,6 +143,26 @@ class BookingCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     notes: Optional[str] = None
+
+
+class BookingAdminCreate(BaseModel):
+    student_user_id: int
+    tutor_user_id: int
+    subject_id: Optional[int] = None
+    start_time: datetime
+    end_time: datetime
+    notes: Optional[str] = None
+    status: BookingStatus = BookingStatus.PENDING
+
+
+class BookingAdminUpdate(BaseModel):
+    student_user_id: Optional[int] = None
+    tutor_user_id: Optional[int] = None
+    subject_id: Optional[int] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    notes: Optional[str] = None
+    status: Optional[BookingStatus] = None
 
 
 class BookingOut(BaseModel):

@@ -2,7 +2,7 @@
 TutorLink — API principal (FastAPI).
 
 Cubre el MVP Release 1 del User Story Mapping:
-Onboarding -> Profile Setup -> Discovery -> Scheduling -> Session Delivery (básico)
+Onboarding -> Pcp .env.example .envrofile Setup -> Discovery -> Scheduling -> Session Delivery (básico)
 + Ratings & Reviews (FR-10), necesario para cerrar el ciclo de Booking.
 
 Mensajería (FR-08) y Admin Dashboard (FR-11) quedan como siguiente iteración,
@@ -18,8 +18,10 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 
 from database import Base, engine, get_db
+import admin
 import models
 import schemas
+from notifications import send_booking_notification
 from security import (
     hash_password, verify_password, create_access_token,
     get_current_user, require_role,
@@ -29,6 +31,7 @@ from security import (
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="TutorLink API", version="1.0.0")
+app.include_router(admin.router)
 
 # CORS para que React (localhost:3000/5173) pueda consumir la API
 app.add_middleware(
@@ -88,6 +91,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @app.get("/users/me", response_model=schemas.UserOut, tags=["auth"])
 def read_current_user(current_user: models.User = Depends(get_current_user)):
     return current_user
+
 
 
 # ===========================================================================
@@ -337,7 +341,16 @@ def create_booking(
     db.add(booking)
     db.commit()
     db.refresh(booking)
-    # TODO (FR-07): disparar notificación al tutor (email/push)
+
+    tutor_user = db.query(models.User).filter(models.User.id == payload.tutor_user_id).first()
+    student_user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    send_booking_notification(
+        to_email=tutor_user.email if tutor_user else "",
+        booking_id=booking.id,
+        event_type="created",
+        tutor_name=tutor_user.full_name if tutor_user else None,
+        student_name=student_user.full_name if student_user else None,
+    )
     return booking
 
 
@@ -376,7 +389,16 @@ def accept_booking(
     booking.status = models.BookingStatus.CONFIRMED
     db.commit()
     db.refresh(booking)
-    # TODO (FR-07): notificar al estudiante
+
+    student_user = db.query(models.User).filter(models.User.id == booking.student_user_id).first()
+    tutor_user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    send_booking_notification(
+        to_email=student_user.email if student_user else "",
+        booking_id=booking.id,
+        event_type="accepted",
+        tutor_name=tutor_user.full_name if tutor_user else None,
+        student_name=student_user.full_name if student_user else None,
+    )
     return booking
 
 
@@ -395,6 +417,16 @@ def decline_booking(
     booking.status = models.BookingStatus.CANCELLED
     db.commit()
     db.refresh(booking)
+
+    student_user = db.query(models.User).filter(models.User.id == booking.student_user_id).first()
+    tutor_user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    send_booking_notification(
+        to_email=student_user.email if student_user else "",
+        booking_id=booking.id,
+        event_type="declined",
+        tutor_name=tutor_user.full_name if tutor_user else None,
+        student_name=student_user.full_name if student_user else None,
+    )
     return booking
 
 
