@@ -5,6 +5,7 @@ description = "Plataforma que conecta estudiantes con tutores independientes: au
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.18.5",
     "annotated-doc==0.0.4",
     "annotated-types==0.7.0",
     "anyio==4.14.2",
@@ -20,6 +21,7 @@ dependencies = [
     "psycopg2-binary==2.9.12",
     "pydantic==2.13.4",
     "pydantic-core==2.46.4",
+    "python-dotenv>=1.2.2",
     "python-jose[cryptography]==3.3.0",
     "python-multipart==0.0.9",
     "sqlalchemy==2.0.51",
