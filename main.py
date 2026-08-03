@@ -28,7 +28,7 @@ from security import (
 )
 
 # Crea las tablas si no existen (para desarrollo; en producción usar Alembic)
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine) Ahora se usa Alembic
 
 app = FastAPI(title="TutorLink API", version="1.0.0")
 app.include_router(admin.router)
@@ -37,9 +37,7 @@ app.include_router(admin.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://tutorlink-mobile.onrender.com", 
+        "*", 
     ],
     allow_credentials=True,
     allow_methods=["*"],

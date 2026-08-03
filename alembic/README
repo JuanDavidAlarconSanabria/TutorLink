@@ -1,0 +1,91 @@
+# Alembic — Migraciones de base de datos
+
+Este directorio contiene las migraciones de esquema de la base de datos, gestionadas con [Alembic](https://alembic.sqlalchemy.org/).
+
+## Estructura
+
+```
+alembic/
+├── env.py            # configuración de conexión y metadata de modelos
+├── script.py.mako    # plantilla usada al generar nuevas migraciones
+└── versions/          # archivos de migración, uno por cambio de esquema
+```
+
+## Configuración
+
+La URL de conexión **no** se define en `alembic.ini` (ese archivo solo tiene un placeholder). Se lee en runtime desde la variable de entorno `DATABASE_URL`, definida en `env.py`.
+
+```bash
+DATABASE_URL=postgresql+psycopg2://usuario:password@host:5432/nombre_db
+```
+
+- En **desarrollo local con Docker**, esta variable ya viene definida en `docker-compose.yml` (host `db`, el nombre del servicio de Postgres en la red interna).
+- Si corres Alembic **fuera de Docker**, exporta la variable manualmente o defínela en un archivo `.env`.
+
+## Crear una nueva migración
+
+Cuando modifiques los modelos de SQLAlchemy (`models.py`), genera la migración correspondiente **dentro del contenedor**, para usar las mismas versiones de librerías que en producción:
+
+```bash
+docker compose exec backend uv run alembic revision --autogenerate -m "descripción del cambio"
+```
+
+Esto crea un archivo nuevo en `alembic/versions/`. **Siempre revisa el archivo generado antes de aplicarlo** — Alembic no detecta todo automáticamente (por ejemplo, cambios de tipo de columna a veces requieren ajuste manual).
+
+Una vez revisado, haz commit del archivo junto con el cambio de modelos:
+
+```bash
+git add alembic/versions/xxxx_descripcion_del_cambio.py
+git commit -m "migración: descripción del cambio"
+```
+
+## Aplicar migraciones
+
+### Automático (recomendado)
+
+El servicio `migrate` del `docker-compose.yml` aplica las migraciones pendientes automáticamente antes de levantar `backend`:
+
+```bash
+docker compose up --build
+```
+
+Orden de arranque: `db` (sana) → `migrate` (`alembic upgrade head`) → `backend`.
+
+### Manual
+
+Si necesitas aplicarlas a mano contra un entorno ya corriendo:
+
+```bash
+docker compose exec backend uv run alembic upgrade head
+```
+
+O usando el servicio dedicado directamente:
+
+```bash
+docker compose run --rm migrate
+```
+
+## Otros comandos útiles
+
+```bash
+# Ver la versión actual aplicada en la BD
+docker compose exec backend uv run alembic current
+
+# Ver historial de migraciones
+docker compose exec backend uv run alembic history
+
+# Revertir la última migración
+docker compose exec backend uv run alembic downgrade -1
+
+# Revertir todas las migraciones
+docker compose exec backend uv run alembic downgrade base
+```
+
+## Notas importantes
+
+- ⚠️ **Nunca** corras `alembic revision --autogenerate` en CI/CD ni en producción. Es una acción de desarrollo que requiere revisión humana antes de aplicarse.
+- ⚠️ Si tienes varias réplicas del backend, las migraciones deben aplicarse **una sola vez**, desde el servicio `migrate` — nunca desde el entrypoint de cada réplica, para evitar condiciones de carrera.
+- Si ves un error de conexión a `localhost` en vez de al host de Docker (`db`), casi siempre significa que la imagen está desactualizada respecto a `env.py`. Reconstruye sin caché:
+  ```bash
+  docker compose build --no-cache migrate
+  ```# Markdown syntax guide

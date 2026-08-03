@@ -17,6 +17,17 @@ services:
       timeout: 5s
       retries: 10
 
+  # Servicio de migracion de db
+  migrate:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-TutorLink}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uv run alembic upgrade head
+    restart: "no"
+
   backend:
     build:
       context: .
@@ -29,8 +40,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   # Servicio opcional: corre la suite completa de tests (unit + integration +
   # acceptance) dentro de un contenedor equivalente al de `backend`, sin
@@ -45,7 +56,7 @@ services:
       DATABASE_URL: sqlite+pysqlite:////tmp/test_tutorlink.db
       JWT_SECRET_KEY: test-secret-key-not-for-production
     profiles: ["test"]
-    command: ["pytest", "-v"]
+    command: ["uv", "run","pytest", "-v"]
 
 volumes:
   tutorlink_db_data:

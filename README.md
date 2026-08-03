@@ -11,6 +11,7 @@ Autores:
  
 - Juan David Alarcón Sanabria
 - Juan Sebastian Moya Alvarez
+- Juan Esteban Medina Cardenas
 - Diego Alejandro Rojas Reina
 
 Plataforma que conecta estudiantes con tutores independientes: autenticación,
