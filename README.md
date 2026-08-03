@@ -6,6 +6,10 @@ Autores:
 - Axel Gomez Moreno
 - David Santiago Ramirez Sanchez
 
+-----------------------------------
+ Cambios hacia la versión 2.0 por:
+ -Juan David Alarcón Sanabria
+
 
 Plataforma que conecta estudiantes con tutores independientes: autenticación,
 perfiles de estudiante/tutor, catálogo de materias, disponibilidad, reservas
@@ -74,8 +78,7 @@ pytest                  # toda la suite, con reporte de cobertura
 pytest tests/unit        # sólo unit / integration / acceptance
 ```
 
-Cobertura actual: **94.8% total** (75 casos de prueba) — `models.py` y
-`schemas.py` al 100%, `main.py` ~92%, `security.py` ~91%. El reporte HTML se
+Cobertura actual: **93.98% total** (79 casos de prueba) — El reporte HTML se
 genera en `coverage_html/index.html` en cada corrida.
 
 ### Pendiente (Release 2/3)
