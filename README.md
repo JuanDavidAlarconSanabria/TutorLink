@@ -8,7 +8,8 @@ Autores:
 
 -----------------------------------
  Cambios hacia la versión 2.0 por:
- -Juan David Alarcón Sanabria
+ 
+- Juan David Alarcón Sanabria
 
 
 Plataforma que conecta estudiantes con tutores independientes: autenticación,
