@@ -11,7 +11,7 @@ Autores:
  
 - Juan David Alarcón Sanabria
 - Juan Sebastian Moya Alvarez
-
+- Juan Esteban Medina Cardenas
 
 Plataforma que conecta estudiantes con tutores independientes: autenticación,
 perfiles de estudiante/tutor, catálogo de materias, disponibilidad, reservas
