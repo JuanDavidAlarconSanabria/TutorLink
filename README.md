@@ -10,6 +10,7 @@ Autores:
  Cambios hacia la versión 2.0 por:
  
 - Juan David Alarcón Sanabria
+- Juan Sebastian Moya Alvarez
 
 
 Plataforma que conecta estudiantes con tutores independientes: autenticación,
